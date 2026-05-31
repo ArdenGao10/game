@@ -44,47 +44,47 @@ const items = {
 };
 
 const itemImages = {
-  coin: "assets/items/coin.png",
-  router: "assets/inspect/router.png",
-  card: "assets/items/card.png",
-  photo: "assets/inspect/photo.png",
-  handle: "assets/items/handle.png",
-  notebook: "assets/inspect/notebook.png",
-  map: "assets/inspect/map.png",
-  network: "assets/inspect/network.png",
-  stain: "assets/items/stain.png",
-  noodle: "assets/items/noodle.png",
-  keyboard: "assets/items/keyboard.png",
-  idcopy: "assets/inspect/idcopy.png",
-  headset: "assets/items/headset.png",
-  ticket: "assets/inspect/ticket.png",
-  earspoon: "assets/items/earspoon.png",
-  drive: "assets/items/drive.png",
+  coin: "assets/items/coin.jpg",
+  router: "assets/inspect/router.jpg",
+  card: "assets/items/card.jpg",
+  photo: "assets/inspect/photo.jpg",
+  handle: "assets/items/handle.jpg",
+  notebook: "assets/inspect/notebook.jpg",
+  map: "assets/inspect/map.jpg",
+  network: "assets/inspect/network.jpg",
+  stain: "assets/items/stain.jpg",
+  noodle: "assets/items/noodle.jpg",
+  keyboard: "assets/items/keyboard.jpg",
+  idcopy: "assets/inspect/idcopy.jpg",
+  headset: "assets/items/headset.jpg",
+  ticket: "assets/inspect/ticket.jpg",
+  earspoon: "assets/items/earspoon.jpg",
+  drive: "assets/items/drive.jpg",
 };
 
 const hotspotImages = {
-  plaque: ["assets/inspect/plaque.png"],
-  rubble: ["assets/items/coin.png"],
-  router: ["assets/inspect/router.png"],
-  price: ["assets/inspect/price.png"],
-  cashier: ["assets/inspect/cashier.png"],
-  lost: ["assets/inspect/lost.png"],
-  noodle: ["assets/items/noodle.png"],
-  ticket: ["assets/inspect/ticket.png"],
-  idcopy: ["assets/inspect/idcopy.png"],
-  drive: ["assets/inspect/drive.png"],
-  pc17: ["assets/inspect/pc17.png"],
-  locker: ["assets/inspect/locker.png"],
-  graffiti: ["assets/inspect/graffiti.png"],
-  keyboard: ["assets/items/keyboard.png"],
-  headset: ["assets/inspect/headset.png"],
-  chair: ["assets/inspect/chair.png"],
-  log: ["assets/inspect/log.png"],
-  map: ["assets/inspect/map.png"],
-  switch: ["assets/inspect/switch.png"],
-  server: ["assets/inspect/server.png"],
-  earspoon: ["assets/items/earspoon.png"],
-  truth: ["assets/inspect/truth.png"],
+  plaque: ["assets/inspect/plaque.jpg"],
+  rubble: ["assets/items/coin.jpg"],
+  router: ["assets/inspect/router.jpg"],
+  price: ["assets/inspect/price.jpg"],
+  cashier: ["assets/inspect/cashier.jpg"],
+  lost: ["assets/inspect/lost.jpg"],
+  noodle: ["assets/items/noodle.jpg"],
+  ticket: ["assets/inspect/ticket.jpg"],
+  idcopy: ["assets/inspect/idcopy.jpg"],
+  drive: ["assets/inspect/drive.jpg"],
+  pc17: ["assets/inspect/pc17.jpg"],
+  locker: ["assets/inspect/locker.jpg"],
+  graffiti: ["assets/inspect/graffiti.jpg"],
+  keyboard: ["assets/items/keyboard.jpg"],
+  headset: ["assets/inspect/headset.jpg"],
+  chair: ["assets/inspect/chair.jpg"],
+  log: ["assets/inspect/log.jpg"],
+  map: ["assets/inspect/map.jpg"],
+  switch: ["assets/inspect/switch.jpg"],
+  server: ["assets/inspect/server.jpg"],
+  earspoon: ["assets/items/earspoon.jpg"],
+  truth: ["assets/inspect/truth.jpg"],
 };
 
 // Tripo 3D 英雄道具：这三个在近景检查里显示可旋转模型，其余仍用写实线索图。
@@ -97,6 +97,31 @@ const hotspotModels = {
   headset: "assets/models/headset.glb",
   drive: "assets/models/drive.glb",
 };
+
+// 预加载所有图片，避免在网络上一条条刷出来（背景是 CSS background-image，
+// 预热到浏览器缓存后切场景/检查遗物就是瞬时显示）。
+const sceneBackgrounds = [
+  "assets/scene-entrance.jpg",
+  "assets/scene-entrance-no-coin.jpg",
+  "assets/scene-entrance-no-router.jpg",
+  "assets/scene-entrance-no-coin-router.jpg",
+  "assets/scene-lobby.jpg",
+  "assets/scene-hall.jpg",
+  "assets/scene-hall-pc17-on.jpg",
+  "assets/scene-admin.jpg",
+];
+function preloadImages(urls) {
+  urls.forEach((url) => { const img = new Image(); img.src = url; });
+}
+// 先热背景（主画面立刻要用），其余道具/近景/人物图在空闲时再热。
+preloadImages(sceneBackgrounds);
+function preloadRestImages() {
+  const portraits = ["assets/characters/lead.jpg", "assets/characters/tech.jpg", "assets/characters/archivist.jpg"];
+  const props = [...new Set([...Object.values(itemImages), ...Object.values(hotspotImages).flat()])];
+  preloadImages([...portraits, ...props]);
+}
+if (typeof requestIdleCallback === "function") requestIdleCallback(preloadRestImages);
+else setTimeout(preloadRestImages, 1200);
 
 // 给近景检查面板设置媒体。
 function setInspectMedia(modelSrc, backgroundImage) {
@@ -348,9 +373,9 @@ document.addEventListener(
 );
 
 const characters = {
-  lead: { name: "沈砚 / 队长", portrait: "assets/characters/lead.png" },
-  tech: { name: "林夏 / 技术员", portrait: "assets/characters/tech.png" },
-  archivist: { name: "许弥 / 档案员", portrait: "assets/characters/archivist.png" },
+  lead: { name: "沈砚 / 队长", portrait: "assets/characters/lead.jpg" },
+  tech: { name: "林夏 / 技术员", portrait: "assets/characters/tech.jpg" },
+  archivist: { name: "许弥 / 档案员", portrait: "assets/characters/archivist.jpg" },
 };
 
 // 拾取道具时的单句旁白（轻量）。
@@ -880,18 +905,29 @@ function renderLockerControls() {
       setCaption(`锁芯没有反应。当前是 ${state.flags.lockLetters.join("")}。把 H_M_ 补成完整的词。`);
       return;
     }
-    state.flags.lockerOpen = true;
-    playObjectAction("locker");
-    success();
-    if (!has("handle")) state.inventory.push("handle");
-    if (!has("notebook")) state.inventory.push("notebook");
-    closeInspect();
-    setCaption("储物柜弹开。你拿到手摇柄，柜底还压着一本网管手册。");
-    queueDialogue(solveBeats.locker);
-    render();
+    unlockLocker();
   });
 
-  inspectControls.append(lock, button);
+  // 演示用：直接开锁，不显示答案
+  const demoButton = document.createElement("button");
+  demoButton.className = "inspect-action demo-action";
+  demoButton.textContent = "直接打开（演示）";
+  demoButton.addEventListener("click", () => unlockLocker());
+
+  inspectControls.append(lock, button, demoButton);
+}
+
+function unlockLocker() {
+  if (state.flags.lockerOpen) return;
+  state.flags.lockerOpen = true;
+  playObjectAction("locker");
+  success();
+  if (!has("handle")) state.inventory.push("handle");
+  if (!has("notebook")) state.inventory.push("notebook");
+  closeInspect();
+  setCaption("储物柜弹开。你拿到手摇柄，柜底还压着一本网管手册。");
+  queueDialogue(solveBeats.locker);
+  render();
 }
 
 function rotateLetter(index, direction) {

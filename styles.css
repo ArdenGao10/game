@@ -43,7 +43,7 @@ button {
   background:
     radial-gradient(circle at 50% 38%, rgba(202, 160, 90, .18), transparent 28%),
     linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.88)),
-    url("assets/scene-entrance.png");
+    url("assets/scene-entrance.jpg");
   background-size: cover;
   background-position: center;
 }
@@ -114,9 +114,11 @@ button {
 /* 固定 16:9 视口：背景按此比例铺满、不裁切，热点坐标因此与图片像素一一对应、不随窗口漂移 */
 .viewport {
   position: relative;
+  /* 显式给出宽高做信箱式适配：不依赖 aspect-ratio 反推高度，
+     否则 Safari 会把高度算塌、绝对定位的 .scene 贴不满而露出黑底 */
+  width: min(100vw, 177.7778vh);
+  height: min(56.25vw, 100vh);
   aspect-ratio: 16 / 9;
-  width: min(100%, 177.7778vh);
-  max-height: 100%;
   overflow: hidden;
 }
 
@@ -687,11 +689,33 @@ button {
   right: 18px;
   bottom: 14px;
   z-index: 12;
-  min-height: 88px;
-  padding: 8px;
+  min-height: 62px;
+  padding: 5px;
+  padding-top: 14px;
   border: 1px solid rgba(227, 205, 157, .18);
   background: rgba(13, 11, 9, .74);
   box-shadow: 0 18px 54px rgba(0,0,0,.46);
+  /* 默认收起：只露出顶部一条把手，鼠标移上去再展开 */
+  transform: translateY(calc(100% - 12px));
+  transition: transform .28s ease;
+}
+
+/* 顶部把手提示 */
+.inventory-bar::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 46px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(227, 205, 157, .45);
+}
+
+.inventory-bar:hover,
+.inventory-bar:focus-within {
+  transform: translateY(0);
 }
 
 .inventory-bar.empty {
@@ -727,12 +751,12 @@ button {
   display: grid;
   grid-template-rows: 1fr auto;
   align-items: end;
-  flex: 0 0 82px;
-  height: 78px;
+  flex: 0 0 62px;
+  height: 54px;
   border-radius: 2px;
-  padding: 5px 5px 6px;
-  font-size: 10px;
-  line-height: 1.15;
+  padding: 3px 4px 4px;
+  font-size: 9px;
+  line-height: 1.1;
   text-align: center;
 }
 
@@ -745,8 +769,8 @@ button {
   display: block;
   align-self: center;
   justify-self: center;
-  width: 68px;
-  height: 48px;
+  width: 48px;
+  height: 32px;
   border: 0;
   background-color: transparent;
   background-size: contain;
@@ -1171,11 +1195,16 @@ button {
   width: 100%;
   max-height: 46vh;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding: 12px;
   border: 1px solid rgba(103, 143, 164, .3);
   background:
     repeating-linear-gradient(180deg, rgba(255,255,255,.03) 0 1px, transparent 1px 14px),
     rgba(10, 14, 15, .72);
+}
+.clue-board::-webkit-scrollbar {
+  display: none;
 }
 
 .clue-card {
@@ -1260,42 +1289,42 @@ button {
   font-size: 14px;
 }
 
-.letter-wheel {
-  display: grid;
-  grid-template-rows: 32px 70px 32px;
-  gap: 4px;
-}
-
-.wheel-btn {
-  border: 1px solid rgba(227, 205, 157, .24);
-  color: var(--ink);
-  background: rgba(23, 18, 14, .82);
-  cursor: pointer;
-}
-
-.wheel-face {
-  display: grid;
-  place-items: center;
+.letter-input {
+  width: 100%;
+  height: 92px;
+  padding: 0;
+  text-align: center;
   border: 1px solid rgba(227, 205, 157, .38);
+  border-radius: 0;
   color: #20170e;
   background:
     linear-gradient(180deg, #d9c597, #8b724d);
   font-family: Georgia, serif;
-  font-size: 38px;
+  font-size: 44px;
   font-weight: 700;
+  text-transform: uppercase;
+  caret-color: #20170e;
   box-shadow: inset 0 8px 18px rgba(255,255,255,.18), inset 0 -14px 22px rgba(0,0,0,.28);
-  animation: wheelSettle .2s ease;
+  outline: none;
+  transition: box-shadow .15s ease, filter .15s ease;
 }
 
-@keyframes wheelSettle {
-  from { transform: rotateX(28deg); filter: brightness(1.35); }
-  to { transform: rotateX(0); filter: brightness(1); }
+.letter-input::placeholder {
+  color: rgba(32, 23, 14, .35);
+}
+
+.letter-input:focus {
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 8px 18px rgba(255,255,255,.18),
+    inset 0 -14px 22px rgba(0,0,0,.28),
+    0 0 0 2px rgba(227, 205, 157, .7);
 }
 
 .scene-entrance {
   background:
     linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.42)),
-    url("assets/scene-entrance.png");
+    url("assets/scene-entrance.jpg");
   background-position: center;
   background-size: cover;
 }
@@ -1303,7 +1332,7 @@ button {
 .scene-entrance.variant-no-coin {
   background:
     linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.42)),
-    url("assets/scene-entrance-no-coin.png");
+    url("assets/scene-entrance-no-coin.jpg");
   background-position: center;
   background-size: cover;
 }
@@ -1311,7 +1340,7 @@ button {
 .scene-entrance.variant-no-router {
   background:
     linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.42)),
-    url("assets/scene-entrance-no-router.png");
+    url("assets/scene-entrance-no-router.jpg");
   background-position: center;
   background-size: cover;
 }
@@ -1319,7 +1348,7 @@ button {
 .scene-entrance.variant-no-coin-router {
   background:
     linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.42)),
-    url("assets/scene-entrance-no-coin-router.png");
+    url("assets/scene-entrance-no-coin-router.jpg");
   background-position: center;
   background-size: cover;
 }
@@ -1352,7 +1381,7 @@ button {
 .scene-lobby {
   background:
     linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.26)),
-    url("assets/scene-lobby.png");
+    url("assets/scene-lobby.jpg");
   background-position: center;
   background-size: cover;
 }
@@ -1383,7 +1412,7 @@ button {
 .scene-hall {
   background:
     linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.28)),
-    url("assets/scene-hall.png");
+    url("assets/scene-hall.jpg");
   background-position: center;
   background-size: cover;
 }
@@ -1391,7 +1420,7 @@ button {
 .scene-hall.variant-pc17-on {
   background:
     linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.28)),
-    url("assets/scene-hall-pc17-on.png");
+    url("assets/scene-hall-pc17-on.jpg");
   background-position: center;
   background-size: cover;
 }
@@ -1421,7 +1450,7 @@ button {
 .scene-admin {
   background:
     linear-gradient(180deg, rgba(0,0,0,.04), rgba(0,0,0,.46)),
-    url("assets/scene-admin.png");
+    url("assets/scene-admin.jpg");
   background-position: center;
   background-size: cover;
 }
@@ -1671,8 +1700,8 @@ button {
     left: 8px;
     right: 8px;
     bottom: 8px;
-    min-height: 78px;
-    padding: 6px;
+    min-height: 56px;
+    padding: 4px;
   }
 
   .inventory {
@@ -1683,9 +1712,9 @@ button {
   }
 
   .item-btn {
-    flex: 0 0 58px;
-    height: 62px;
-    font-size: 10px;
+    flex: 0 0 50px;
+    height: 48px;
+    font-size: 9px;
   }
 
   .tool-btn {
@@ -1753,8 +1782,9 @@ button {
     padding: 10px;
   }
 
-  .wheel-face {
-    font-size: 30px;
+  .letter-input {
+    height: 64px;
+    font-size: 32px;
   }
 
   .map-strip {
@@ -1857,3 +1887,19 @@ button {
   transition: filter .2s ease;
 }
 .ending-restart:hover { filter: brightness(1.12); }
+
+/* 禁止对话文字被鼠标选中产生蓝色高亮 */
+.dialogue,
+.dialogue-text,
+.dialogue-text strong,
+.dialogue-text p,
+.dialogue-next {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.dialogue ::selection {
+  background: transparent;
+}

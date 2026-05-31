@@ -1,0 +1,10 @@
+.ttsenv
+.git
+__pycache__
+*.py
+*.md
+editor.html
+*.before-*.png
+# 原始 PNG 母图保留在仓库，但不部署：线上一律用压缩后的 .jpg（见 image-pipeline）
+*.png
+.DS_Store

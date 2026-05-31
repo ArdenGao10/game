@@ -8,3 +8,4 @@ __pycache__/
 
 # Editor backups
 *.before-*.png
+.vercel
