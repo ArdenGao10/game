@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>网吧考古学家</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* === Tripo 3D 遗物检查视图（试点：路由器）=== */
+      .inspect-art.has-model {
+        position: relative;
+        min-height: 300px;
+        overflow: hidden;
+        background: radial-gradient(ellipse at 50% 38%, #1d2129 0%, #0a0c10 82%);
+        box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.85);
+      }
+      .inspect-art.has-model::before { display: none; }
+      .inspect-art.has-model model-viewer {
+        width: 100%;
+        height: 100%;
+        min-height: 300px;
+        background: transparent;
+        --poster-color: transparent;
+      }
+      .inspect-art.has-model::after {
+        /* 暗角，让干净模型沉进废墟氛围；覆盖默认的 EVIDENCE VIEW 角标 */
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.6) 100%);
+        mix-blend-mode: multiply;
+        z-index: 1;
+      }
+      .inspect-art .model-hint {
+        position: absolute;
+        left: 50%;
+        bottom: 10px;
+        transform: translateX(-50%);
+        z-index: 2;
+        pointer-events: none;
+        font-size: 12px;
+        letter-spacing: 0.05em;
+        color: rgba(222, 228, 238, 0.72);
+        background: rgba(0, 0, 0, 0.45);
+        padding: 3px 11px;
+        border-radius: 999px;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="game" class="game">
+      <section id="titleScreen" class="title-screen">
+        <div class="title-content">
+          <p>第 21 世纪遗迹 / C-404</p>
+          <h1>网吧考古学家</h1>
+          <span>第一章：星河还开着 / v0.6 人物主线与底部对话版</span>
+          <small>固定镜头点击解谜。检查遗物、操作机关、把旧网吧重新解释成人类互助网络。</small>
+          <button id="startBtn">开始考古</button>
+        </div>
+      </section>
+
+      <section id="stage" class="stage" aria-label="第一人称探索画面">
+        <div id="viewport" class="viewport">
+          <div id="scene" class="scene"></div>
+          <div id="flash" class="flash"></div>
+          <div class="vignette"></div>
+          <div class="home-overlay" aria-hidden="true">HOME</div>
+          <div id="hotspots" class="hotspots"></div>
+        </div>
+        <div id="sceneLabel" class="scene-label"></div>
+        <button id="leftArrow" class="walk-arrow left" aria-label="返回上一处">‹</button>
+        <button id="rightArrow" class="walk-arrow right" aria-label="前往下一处">›</button>
+        <div id="caption" class="caption"></div>
+        <div id="dialogueBlocker" class="dialogue-blocker hidden" aria-hidden="true"></div>
+        <section id="dialogue" class="dialogue hidden">
+          <img id="speakerPortrait" class="speaker-portrait" alt="" />
+          <div class="dialogue-text">
+            <strong id="speakerName"></strong>
+            <p id="speakerLine"></p>
+          </div>
+          <button id="dialogueNext" class="dialogue-next">继续 ▸</button>
+        </section>
+      </section>
+
+      <nav class="settings-nav" aria-label="设置导航">
+        <button id="settingsToggle" class="settings-toggle" type="button" aria-label="设置" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <line x1="4" y1="7" x2="20" y2="7"></line>
+            <line x1="4" y1="12" x2="20" y2="12"></line>
+            <line x1="4" y1="17" x2="20" y2="17"></line>
+            <circle cx="9" cy="7" r="2"></circle>
+            <circle cx="15" cy="12" r="2"></circle>
+            <circle cx="11" cy="17" r="2"></circle>
+          </svg>
+        </button>
+        <div id="settingsMenu" class="settings-menu hidden">
+          <button id="noteBtn" class="tool-btn">札记</button>
+          <button id="objectiveBtn" class="tool-btn">目标</button>
+          <button id="resetBtn" class="tool-btn">重新开始</button>
+          <button id="soundBtn" class="tool-btn">声音</button>
+        </div>
+      </nav>
+
+      <nav class="inventory-bar" aria-label="道具栏">
+        <div id="inventory" class="inventory"></div>
+      </nav>
+
+      <section id="inspect" class="inspect hidden" aria-label="近景检查">
+        <div id="inspectCard" class="inspect-card">
+          <button id="closeInspect" class="close-btn" aria-label="关闭">×</button>
+          <div id="inspectArt" class="inspect-art"></div>
+          <h1 id="inspectTitle"></h1>
+          <p id="inspectText"></p>
+          <div id="inspectControls" class="inspect-controls"></div>
+        </div>
+      </section>
+
+      <section id="endingScreen" class="ending-screen hidden" aria-hidden="true">
+        <div class="ending-inner">
+          <p class="ending-kicker">2012_LOCAL_WARNING_ARCHIVE</p>
+          <h2 class="ending-title">档案解密完成</h2>
+          <p id="endingBody" class="ending-body"></p>
+          <div id="endingStats" class="ending-stats"></div>
+          <p class="ending-chapter">第一章 · 完<span>星河还开着</span></p>
+          <button id="endingRestart" class="ending-restart">再走一遍</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="assets/vendor/model-viewer.min.js"></script>
+    <script src="game.js"></script>
+  </body>
+</html>

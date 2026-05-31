@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>热点定位编辑器 · 网吧考古学家</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; background: #0c0c0b; color: #efe5cf;
+        font-family: system-ui, "PingFang SC", sans-serif; font-size: 14px;
+      }
+      header {
+        display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+        padding: 10px 14px; border-bottom: 1px solid #3a352b; background: #14110d;
+      }
+      header h1 { font-size: 15px; margin: 0 14px 0 0; color: #e3cd9d; }
+      .scenebtn {
+        padding: 6px 12px; border: 1px solid #54493a; background: #1c180f;
+        color: #efe5cf; cursor: pointer; border-radius: 3px;
+      }
+      .scenebtn.active { background: #5d1e1c; border-color: #caa05a; }
+      .hint { color: #b9a988; font-size: 12px; margin-left: auto; }
+      main { display: grid; grid-template-columns: 1fr 320px; gap: 12px; padding: 12px; }
+      .stagewrap { background: #000; display: grid; place-items: center; min-height: 60vh; }
+      #stage {
+        position: relative; aspect-ratio: 16 / 9; width: 100%;
+        background-size: cover; background-position: center; cursor: crosshair;
+        box-shadow: 0 0 0 1px #3a352b;
+      }
+      .box {
+        position: absolute; border: 2px solid #ffd25a;
+        background: rgba(202,160,90,.14); cursor: move;
+      }
+      .box.sel { border-color: #ff7d5a; background: rgba(255,125,90,.18); z-index: 5; }
+      .box .lbl {
+        position: absolute; top: -20px; left: 0; padding: 1px 6px;
+        background: rgba(0,0,0,.8); color: #ffe078; font-size: 12px; white-space: nowrap;
+        pointer-events: none;
+      }
+      .handle {
+        position: absolute; right: -6px; bottom: -6px; width: 14px; height: 14px;
+        background: #ffd25a; border: 1px solid #000; cursor: nwse-resize; border-radius: 2px;
+      }
+      aside { display: grid; gap: 10px; align-content: start; }
+      .panel { border: 1px solid #3a352b; background: #14110d; padding: 10px; }
+      .panel h2 { font-size: 13px; margin: 0 0 8px; color: #e3cd9d; }
+      .row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+      .row label { width: 56px; color: #b9a988; }
+      .row input[type=text], .row input[type=number] {
+        flex: 1; padding: 5px 7px; background: #0c0c0b; border: 1px solid #54493a;
+        color: #efe5cf; border-radius: 3px;
+      }
+      button.act {
+        padding: 7px 10px; border: 1px solid #54493a; background: #1c180f;
+        color: #efe5cf; cursor: pointer; border-radius: 3px;
+      }
+      button.act:hover { border-color: #caa05a; }
+      textarea {
+        width: 100%; height: 220px; background: #0c0c0b; border: 1px solid #54493a;
+        color: #cfe6c6; font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+        padding: 8px; border-radius: 3px; resize: vertical;
+      }
+      ul.list { list-style: none; margin: 0; padding: 0; max-height: 160px; overflow-y: auto; }
+      ul.list li {
+        padding: 4px 6px; cursor: pointer; border-bottom: 1px solid #251f17; font-size: 12px;
+      }
+      ul.list li.sel { background: #2a1413; color: #ffb38f; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>热点定位编辑器</h1>
+      <button class="scenebtn" data-s="entrance">坍塌外墙</button>
+      <button class="scenebtn" data-s="lobby">前台遗址</button>
+      <button class="scenebtn" data-s="hall">机房大厅</button>
+      <button class="scenebtn" data-s="admin">管理员小屋</button>
+      <span class="hint">在图上拖动空白处=新建框 · 拖框=移动 · 拖右下角=缩放 · 选中后按 Delete 删除</span>
+    </header>
+
+    <main>
+      <div class="stagewrap">
+        <div id="stage"></div>
+      </div>
+      <aside>
+        <div class="panel">
+          <h2>选中的热点</h2>
+          <div class="row"><label>id</label><input id="fId" type="text" placeholder="例如 cashier" /></div>
+          <div class="row"><label>x %</label><input id="fX" type="number" step="0.1" /></div>
+          <div class="row"><label>y %</label><input id="fY" type="number" step="0.1" /></div>
+          <div class="row"><label>w %</label><input id="fW" type="number" step="0.1" /></div>
+          <div class="row"><label>h %</label><input id="fH" type="number" step="0.1" /></div>
+          <div class="row">
+            <button class="act" id="addBtn">+ 新建框</button>
+            <button class="act" id="delBtn">删除选中</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>本场景所有热点</h2>
+          <ul class="list" id="list"></ul>
+        </div>
+
+        <div class="panel">
+          <h2>导出（复制粘进 game.js）</h2>
+          <div class="row"><button class="act" id="copyBtn">复制坐标</button><span id="copied" style="color:#7fd47f"></span></div>
+          <textarea id="out" readonly></textarea>
+        </div>
+      </aside>
+    </main>
+
+    <script>
+      // 当前 game.js 里的热点坐标（作为起点，改对了再导出回去）
+      const DATA = {
+        entrance: [
+          { id: "plaque", x: 23, y: 0, w: 43, h: 31 },
+          { id: "rubble", x: 36, y: 76, w: 6, h: 7 },
+          { id: "router", x: 75, y: 6, w: 9, h: 15 },
+        ],
+        lobby: [
+          { id: "price", x: 62, y: 2, w: 26, h: 35 },
+          { id: "cashier", x: 17, y: 49, w: 27, h: 26 },
+          { id: "lost", x: 57, y: 44, w: 7, h: 11 },
+          { id: "noodle", x: 69, y: 67, w: 9, h: 21 },
+          { id: "ticket", x: 47, y: 84, w: 8, h: 8 },
+          { id: "idcopy", x: 57, y: 77, w: 8, h: 11 },
+        ],
+        hall: [
+          { id: "drive", x: 29, y: 84, w: 6, h: 9 },
+          { id: "pc17", x: 30, y: 41, w: 13, h: 14 },
+          { id: "locker", x: 81, y: 12, w: 15, h: 77 },
+          { id: "graffiti", x: 0, y: 8, w: 34, h: 28 },
+          { id: "keyboard", x: 0, y: 74, w: 21, h: 14 },
+          { id: "headset", x: 17, y: 62, w: 14, h: 11 },
+          { id: "chair", x: 51, y: 64, w: 24, h: 34 },
+        ],
+        admin: [
+          { id: "log", x: 33, y: 55, w: 8, h: 8 },
+          { id: "map", x: 13, y: 66, w: 22, h: 12 },
+          { id: "switch", x: 64, y: 9, w: 15, h: 33 },
+          { id: "server", x: 48, y: 6, w: 15, h: 64 },
+          { id: "earspoon", x: 14, y: 90, w: 5, h: 4 },
+        ],
+      };
+      const IMG = {
+        entrance: "assets/scene-entrance.png",
+        lobby: "assets/scene-lobby.png",
+        hall: "assets/scene-hall.png",
+        admin: "assets/scene-admin.png",
+      };
+
+      const stage = document.getElementById("stage");
+      const list = document.getElementById("list");
+      const out = document.getElementById("out");
+      const fId = document.getElementById("fId"), fX = document.getElementById("fX"),
+        fY = document.getElementById("fY"), fW = document.getElementById("fW"), fH = document.getElementById("fH");
+      let cur = "entrance", boxes = [], sel = -1;
+
+      function loadScene(s) {
+        cur = s; sel = -1;
+        boxes = DATA[s].map((b) => ({ ...b }));
+        stage.style.backgroundImage = `url("${IMG[s]}")`;
+        document.querySelectorAll(".scenebtn").forEach((b) => b.classList.toggle("active", b.dataset.s === s));
+        render();
+      }
+
+      function pct(px, total) { return Math.round((px / total) * 1000) / 10; }
+
+      function render() {
+        // boxes
+        [...stage.querySelectorAll(".box")].forEach((n) => n.remove());
+        boxes.forEach((b, i) => {
+          const el = document.createElement("div");
+          el.className = "box" + (i === sel ? " sel" : "");
+          el.style.left = b.x + "%"; el.style.top = b.y + "%";
+          el.style.width = b.w + "%"; el.style.height = b.h + "%";
+          el.innerHTML = `<span class="lbl">${b.id}</span><span class="handle"></span>`;
+          el.addEventListener("pointerdown", (e) => startMove(e, i));
+          el.querySelector(".handle").addEventListener("pointerdown", (e) => startResize(e, i));
+          stage.appendChild(el);
+        });
+        // list
+        list.innerHTML = "";
+        boxes.forEach((b, i) => {
+          const li = document.createElement("li");
+          li.textContent = `${b.id}  (${b.x}, ${b.y}, ${b.w}, ${b.h})`;
+          li.className = i === sel ? "sel" : "";
+          li.addEventListener("click", () => { sel = i; render(); });
+          list.appendChild(li);
+        });
+        // form
+        const b = boxes[sel];
+        fId.value = b ? b.id : ""; fX.value = b ? b.x : ""; fY.value = b ? b.y : "";
+        fW.value = b ? b.w : ""; fH.value = b ? b.h : "";
+        // export
+        out.value = boxes.map((b) => `      { id: "${b.id}", x: ${Math.round(b.x)}, y: ${Math.round(b.y)}, w: ${Math.round(b.w)}, h: ${Math.round(b.h)} },`).join("\n");
+      }
+
+      function rect() { return stage.getBoundingClientRect(); }
+
+      function startMove(e, i) {
+        e.preventDefault(); e.stopPropagation(); sel = i; render();
+        const r = rect(), b = boxes[i];
+        const ox = pct(e.clientX - r.left, r.width) - b.x;
+        const oy = pct(e.clientY - r.top, r.height) - b.y;
+        const move = (ev) => {
+          b.x = Math.max(0, Math.min(100 - b.w, pct(ev.clientX - r.left, r.width) - ox));
+          b.y = Math.max(0, Math.min(100 - b.h, pct(ev.clientY - r.top, r.height) - oy));
+          render();
+        };
+        const up = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); };
+        document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
+      }
+
+      function startResize(e, i) {
+        e.preventDefault(); e.stopPropagation(); sel = i; render();
+        const r = rect(), b = boxes[i];
+        const move = (ev) => {
+          b.w = Math.max(2, Math.min(100 - b.x, pct(ev.clientX - r.left, r.width) - b.x));
+          b.h = Math.max(2, Math.min(100 - b.y, pct(ev.clientY - r.top, r.height) - b.y));
+          render();
+        };
+        const up = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); };
+        document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
+      }
+
+      // 在空白处拖动 = 新建框
+      stage.addEventListener("pointerdown", (e) => {
+        if (e.target !== stage) return;
+        const r = rect();
+        const sx = pct(e.clientX - r.left, r.width), sy = pct(e.clientY - r.top, r.height);
+        const b = { id: "new" + boxes.length, x: sx, y: sy, w: 2, h: 2 };
+        boxes.push(b); sel = boxes.length - 1;
+        const move = (ev) => {
+          const cxp = pct(ev.clientX - r.left, r.width), cyp = pct(ev.clientY - r.top, r.height);
+          b.x = Math.min(sx, cxp); b.y = Math.min(sy, cyp);
+          b.w = Math.max(2, Math.abs(cxp - sx)); b.h = Math.max(2, Math.abs(cyp - sy));
+          render();
+        };
+        const up = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); };
+        document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
+        render();
+      });
+
+      // 表单编辑
+      [["fId", "id"], ["fX", "x"], ["fY", "y"], ["fW", "w"], ["fH", "h"]].forEach(([fid, key]) => {
+        document.getElementById(fid).addEventListener("input", (e) => {
+          if (sel < 0) return;
+          boxes[sel][key] = key === "id" ? e.target.value : parseFloat(e.target.value) || 0;
+          render();
+        });
+      });
+
+      document.getElementById("addBtn").addEventListener("click", () => {
+        boxes.push({ id: "new" + boxes.length, x: 45, y: 45, w: 10, h: 10 });
+        sel = boxes.length - 1; render();
+      });
+      document.getElementById("delBtn").addEventListener("click", () => {
+        if (sel >= 0) { boxes.splice(sel, 1); sel = -1; render(); }
+      });
+      document.addEventListener("keydown", (e) => {
+        if ((e.key === "Delete" || e.key === "Backspace") && sel >= 0 && document.activeElement.tagName !== "INPUT") {
+          boxes.splice(sel, 1); sel = -1; render();
+        }
+      });
+      document.getElementById("copyBtn").addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(out.value); document.getElementById("copied").textContent = "已复制"; }
+        catch { out.select(); document.execCommand("copy"); document.getElementById("copied").textContent = "已复制"; }
+        setTimeout(() => (document.getElementById("copied").textContent = ""), 1500);
+      });
+
+      document.querySelectorAll(".scenebtn").forEach((b) => b.addEventListener("click", () => loadScene(b.dataset.s)));
+      loadScene("entrance");
+    </script>
+  </body>
+</html>
