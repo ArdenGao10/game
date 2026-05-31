@@ -7,4 +7,6 @@ editor.html
 *.before-*.png
 # 原始 PNG 母图保留在仓库，但不部署：线上一律用压缩后的 .jpg（见 image-pipeline）
 *.png
+# 未使用的模型母本，不部署
+router-clean.glb
 .DS_Store

@@ -111,7 +111,11 @@ const sceneBackgrounds = [
   "assets/scene-admin.jpg",
 ];
 function preloadImages(urls) {
-  urls.forEach((url) => { const img = new Image(); img.src = url; });
+  urls.forEach((url) => {
+    const img = new Image();
+    img.src = url;
+    if (img.decode) img.decode().catch(() => {}); // 预解码，近景打开时直接命中、不闪
+  });
 }
 // 先热背景（主画面立刻要用），其余道具/近景/人物图在空闲时再热。
 preloadImages(sceneBackgrounds);
@@ -148,8 +152,24 @@ function setInspectMedia(modelSrc, backgroundImage) {
   } else {
     inspectArt.classList.remove("has-model");
     inspectArt.innerHTML = "";
-    inspectArt.style.backgroundImage = backgroundImage || "";
+    applyInspectPhoto(backgroundImage || "");
   }
+}
+
+// 先把图片解码好再贴成背景，避免设置 background-image 时先露出渐变底再刷出图（“闪一下”）。
+// token 保证快速连续打开时只应用最后一张，旧图在新图解码完前不会被清掉。
+let inspectPhotoToken = 0;
+function applyInspectPhoto(bg) {
+  const token = ++inspectPhotoToken;
+  if (!bg) { inspectArt.style.backgroundImage = ""; return; }
+  const url = bg.match(/url\("([^"]+)"\)/)?.[1];
+  const apply = () => { if (token === inspectPhotoToken) inspectArt.style.backgroundImage = bg; };
+  if (!url) { apply(); return; }
+  const img = new Image();
+  img.src = url;
+  if (img.decode) img.decode().then(apply).catch(apply);
+  else if (img.complete) apply();
+  else { img.onload = apply; img.onerror = apply; }
 }
 
 // 结局线索板：把日常异常重新读成预警。每张卡只有一个 correct 选项。
