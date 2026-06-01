@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>网吧考古学家</title>
+    <!-- 首屏(标题页)背景：HTML 解析阶段就抢跑下载，不必等 styles.css 解析完才开始拉 -->
+    <link rel="preload" as="image" href="assets/scene-entrance.jpg" fetchpriority="high" />
     <link rel="stylesheet" href="styles.css" />
     <style>
       /* === Tripo 3D 遗物检查视图（试点：路由器）=== */
@@ -128,7 +130,7 @@
       </section>
     </main>
 
-    <script type="module" src="assets/vendor/model-viewer.min.js"></script>
+    <!-- model-viewer(~1MB) 由 game.js 在首屏图片加载完的空闲期再注入，不和首屏背景抢带宽 -->
     <script src="game.js"></script>
   </body>
 </html>

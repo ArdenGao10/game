@@ -100,8 +100,10 @@ const hotspotModels = {
 
 // 预加载所有图片，避免在网络上一条条刷出来（背景是 CSS background-image，
 // 预热到浏览器缓存后切场景/检查遗物就是瞬时显示）。
-const sceneBackgrounds = [
-  "assets/scene-entrance.jpg",
+// 首屏立刻要看的那张（标题页/入口）单独 eager 预热并预解码；其余背景、道具、近景、
+// 人物图都挪到空闲期，避免一上来 8 张背景 + 1MB 的 3D 库一起抢带宽，把可见的第一张拖慢。
+const firstScene = "assets/scene-entrance.jpg";
+const restBackgrounds = [
   "assets/scene-entrance-no-coin.jpg",
   "assets/scene-entrance-no-router.jpg",
   "assets/scene-entrance-no-coin-router.jpg",
@@ -114,22 +116,35 @@ function preloadImages(urls) {
   urls.forEach((url) => {
     const img = new Image();
     img.src = url;
-    if (img.decode) img.decode().catch(() => {}); // 预解码，近景打开时直接命中、不闪
+    if (img.decode) img.decode().catch(() => {}); // 预解码，切场景/近景打开时直接命中、不闪
   });
 }
-// 先热背景（主画面立刻要用），其余道具/近景/人物图在空闲时再热。
-preloadImages(sceneBackgrounds);
-function preloadRestImages() {
+preloadImages([firstScene]);
+
+// model-viewer(~1MB) 按需注入，且只注入一次。首个 3D 近景打开前若空闲期已注入则直接命中。
+let modelViewerRequested = false;
+function loadModelViewer() {
+  if (modelViewerRequested) return;
+  modelViewerRequested = true;
+  const s = document.createElement("script");
+  s.type = "module";
+  s.src = "assets/vendor/model-viewer.min.js";
+  document.body.appendChild(s);
+}
+
+function preloadRest() {
   const portraits = ["assets/characters/lead.jpg", "assets/characters/tech.jpg", "assets/characters/archivist.jpg"];
   const props = [...new Set([...Object.values(itemImages), ...Object.values(hotspotImages).flat()])];
-  preloadImages([...portraits, ...props]);
+  preloadImages([...restBackgrounds, ...portraits, ...props]);
+  loadModelViewer(); // 首屏图都安排完了，再后台拉 3D 库，玩到 3D 近景时已就绪
 }
-if (typeof requestIdleCallback === "function") requestIdleCallback(preloadRestImages);
-else setTimeout(preloadRestImages, 1200);
+if (typeof requestIdleCallback === "function") requestIdleCallback(preloadRest);
+else setTimeout(preloadRest, 1200);
 
 // 给近景检查面板设置媒体。
 function setInspectMedia(modelSrc, backgroundImage) {
   if (modelSrc) {
+    loadModelViewer(); // 兜底：空闲期若还没注入，这里立刻拉；<model-viewer> 会在脚本就绪后自动升级
     inspectArt.classList.add("has-model");
     inspectArt.style.backgroundImage = "";
     inspectArt.innerHTML = `
@@ -141,8 +156,8 @@ function setInspectMedia(modelSrc, backgroundImage) {
         interaction-prompt="none"
         loading="eager"
         exposure="0.62"
-        shadow-intensity="0.85"
-        shadow-softness="1"
+        shadow-intensity="0.6"
+        shadow-softness="0"
         environment-image="neutral"
         camera-orbit="20deg 75deg 105%"
         min-field-of-view="20deg"
@@ -584,9 +599,35 @@ function sceneDialogue(scene) {
   if (lines[scene]) queueDialogue(lines[scene]);
 }
 
+// 场景 class（去掉前缀 "scene "）→ 背景图，用于切换前预解码。
+// 旧背景在新图解码完成前保持不动，换 class 时新图已可即时栅格化，不再露出渐变底“闪一下”。
+const sceneBgUrl = {
+  "scene-entrance": "assets/scene-entrance.jpg",
+  "scene-entrance variant-no-coin": "assets/scene-entrance-no-coin.jpg",
+  "scene-entrance variant-no-router": "assets/scene-entrance-no-router.jpg",
+  "scene-entrance variant-no-coin-router": "assets/scene-entrance-no-coin-router.jpg",
+  "scene-lobby": "assets/scene-lobby.jpg",
+  "scene-hall": "assets/scene-hall.jpg",
+  "scene-hall variant-pc17-on": "assets/scene-hall-pc17-on.jpg",
+  "scene-admin": "assets/scene-admin.jpg",
+};
+let sceneClassToken = 0;
+function applySceneClass(cls) {
+  if (sceneEl.className === cls) return; // 没变就别动，避免无谓重绘
+  const token = ++sceneClassToken;
+  const url = sceneBgUrl[cls.replace(/^scene\s+/, "")];
+  const apply = () => { if (token === sceneClassToken) sceneEl.className = cls; };
+  if (!url) { apply(); return; } // 无图（如结局场景）直接换
+  const img = new Image();
+  img.src = url;
+  if (img.decode) img.decode().then(apply).catch(apply);
+  else if (img.complete) apply();
+  else { img.onload = apply; img.onerror = apply; }
+}
+
 function render() {
   const scene = scenes[state.scene];
-  sceneEl.className = `scene ${scene.className} ${sceneVariantClass()}`.trim();
+  applySceneClass(`scene ${scene.className} ${sceneVariantClass()}`.trim());
   const index = order.indexOf(state.scene);
   sceneLabel.textContent = index >= 0 ? `${index + 1}/4  ${scene.name}` : scene.name;
   hotspotsEl.innerHTML = "";

@@ -125,18 +125,21 @@ button {
 .scene {
   position: absolute;
   inset: 0;
-  transition: filter .2s ease;
   background-size: cover;
   background-position: center;
 }
 
 .stage.walking .scene {
   animation: stepShift .52s ease;
+  /* 走动期间把整张背景提升为独立合成层，transform 动画不触发重绘 */
+  will-change: transform;
 }
 
+/* 走动转场：只动 transform + opacity（都走合成器，集显也不掉帧）；
+   舞台底是 #000，降 opacity ≈ 原来的 brightness 变暗，效果接近而不做全屏 blur pass */
 @keyframes stepShift {
-  0% { transform: scale(1.018) translateX(10px); filter: blur(1px) brightness(.72); }
-  100% { transform: scale(1) translateX(0); filter: blur(0) brightness(1); }
+  0% { transform: scale(1.018) translateX(10px); opacity: .72; }
+  100% { transform: scale(1) translateX(0); opacity: 1; }
 }
 
 .scene::before,
